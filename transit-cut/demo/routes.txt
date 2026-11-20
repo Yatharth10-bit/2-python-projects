@@ -1,0 +1,5 @@
+route_id,route_short_name,route_long_name,route_type
+GREEN,G,Green Line,3
+BLUE,B,Blue Line,3
+GOLD,Y,Gold Line,3
+DEPOT,D,Depot Link,3
