@@ -1,4 +1,7 @@
 import unittest
+import json
+import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -8,6 +11,14 @@ from seat_race import change, desk, race, status
 
 
 class BookingTests(unittest.TestCase):
+    def test_run_file_without_arguments(self):
+        script = Path(__file__).with_name("seat_race.py").resolve()
+        with TemporaryDirectory() as folder:
+            run = subprocess.run([sys.executable, str(script)], cwd=folder,
+                                 capture_output=True, text=True, check=True, timeout=30)
+            self.assertTrue(all(json.loads(run.stdout)["checks"].values()))
+            self.assertEqual(list(Path(folder).iterdir()), [])
+
     def test_race_promotes_first_waiter(self):
         result = race(5, 2)
         self.assertEqual(len(result["before"]["confirmed"]), 2)
@@ -59,3 +70,7 @@ class BookingTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 change(db, "cancel", "lab", "nobody")
             self.assertEqual(change(db, "book", "lab", "A")["state"], "confirmed")
+
+
+if __name__ == "__main__":
+    unittest.main()

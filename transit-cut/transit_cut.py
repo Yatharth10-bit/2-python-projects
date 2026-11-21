@@ -93,6 +93,18 @@ def load(path):
         return build(feed)
 
 
+def standalone_demo():
+    """Use the same fictional routes when only this Python file was downloaded."""
+    stops = {"A": "Library", "B": "Clock Tower", "C": "West Gate", "D": "Observatory",
+             "E": "Market", "F": "Lake Walk", "X": "Depot"}
+    routes = {"GREEN": "ABCD", "BLUE": "AB", "GOLD": "BEFC", "DEPOT": "XA"}
+    edges = defaultdict(lambda: defaultdict(set))
+    for route, sequence in routes.items():
+        for origin, dest in zip(sequence, sequence[1:]):
+            edges[origin][dest].add(route)
+    return stops, set(routes), edges
+
+
 def draw(network, result, label):
     stops, _, edges = network
     origin = result["origin"]["id"]
@@ -145,20 +157,26 @@ def draw(network, result, label):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--feed", type=Path, default=Path(__file__).with_name("demo"))
+    parser.add_argument("--feed", type=Path, help="GTFS directory or ZIP (default: fictional demo)")
     parser.add_argument("--origin", default="A", help="GTFS stop_id")
     parser.add_argument("--close", action="append", help="GTFS route_id, repeat for multiple closures")
     parser.add_argument("--list", action="store_true", help="List valid stop IDs, names, and route IDs")
     parser.add_argument("--svg", type=Path, help="write a small closure diagram")
     args = parser.parse_args()
     try:
-        network = load(args.feed)
+        bundled = Path(__file__).with_name("demo")
+        if args.feed is not None:
+            network = load(args.feed)
+        elif (bundled / "stops.txt").is_file():
+            network = load(bundled)
+        else:
+            network = standalone_demo()
         if args.list:
             result = {"stops": network[0], "routes": sorted(network[1])}
         else:
             result = compare(network, args.origin, set(args.close or ["GREEN"]))
             if args.svg:
-                label = "Synthetic demo" if args.feed == Path(__file__).with_name("demo") else "Imported GTFS"
+                label = "Synthetic demo" if args.feed is None or args.feed == bundled else "Imported GTFS"
                 args.svg.write_text(draw(network, result, label), encoding="utf-8")
     except (ValueError, OSError, zipfile.BadZipFile, csv.Error) as exc:
         parser.exit(2, f"Transit Cut: {exc}\n")

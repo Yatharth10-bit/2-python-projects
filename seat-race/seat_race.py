@@ -2,6 +2,7 @@
 import argparse
 import json
 import sqlite3
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
@@ -176,7 +177,8 @@ def main():
         cmd.add_argument("slot")
         if action != "status":
             cmd.add_argument("student")
-    args = parser.parse_args()
+    # Editors launch the current file without command-line arguments.
+    args = parser.parse_args(sys.argv[1:] or ["race"])
     try:
         if args.command == "demo":
             result = demo()
