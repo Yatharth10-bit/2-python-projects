@@ -17,3 +17,13 @@ jobs:
         run: python -m unittest discover -s seat-race -v
       - name: Transit Cut tests
         run: python -m unittest discover -s transit-cut -v
+      - name: Run a renamed standalone copy outside the repository
+        shell: python
+        run: |
+          import pathlib, shutil, subprocess, sys, tempfile
+          with tempfile.TemporaryDirectory() as folder, tempfile.TemporaryDirectory() as cwd:
+              script = pathlib.Path(folder) / "i = 1.py"
+              shutil.copyfile("run_projects.py", script)
+              output = subprocess.check_output([sys.executable, "-I", str(script)], cwd=cwd, text=True)
+              assert "1 confirmed, 7 waiting" in output
+              assert "5 before, 4 after" in output
